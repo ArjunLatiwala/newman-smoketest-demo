@@ -1,0 +1,16 @@
+{
+  "info": {
+    "name": "Demo Collection",
+    "_postman_id": "demo-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/"
+      }
+    }
+  ]
+}
