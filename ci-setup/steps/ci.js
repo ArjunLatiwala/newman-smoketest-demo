@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // ─── Simple logger (works with or without chalk) ───────────────────────────
 let chalk;
@@ -60,6 +61,40 @@ function validatePackageJson() {
   }
 
   return valid;
+}
+
+/**
+ * Check that package-lock.json exists — required by `npm ci` in the workflow.
+ * If missing, automatically runs `npm install` to generate it.
+ */
+function ensurePackageLock() {
+  const lockPath = path.resolve(process.cwd(), 'package-lock.json');
+  const yarnPath = path.resolve(process.cwd(), 'yarn.lock');
+
+  if (fs.existsSync(lockPath)) {
+    log.success('package-lock.json found.');
+    return true;
+  }
+
+  if (fs.existsSync(yarnPath)) {
+    log.success('yarn.lock found.');
+    return true;
+  }
+
+  // Neither lock file exists — auto-generate it
+  log.warn('No package-lock.json found — the CI "npm ci" step will fail without it.');
+  log.info('Running "npm install" to generate package-lock.json automatically...');
+
+  try {
+    execSync('npm install', { stdio: 'inherit', cwd: process.cwd() });
+    log.success('package-lock.json generated successfully.');
+    log.info('Make sure to commit package-lock.json to your repo before pushing.');
+    return true;
+  } catch (err) {
+    log.error('Failed to run "npm install" automatically.');
+    log.error('Please run "npm install" manually and commit package-lock.json.');
+    return false;
+  }
 }
 
 /**
@@ -122,18 +157,23 @@ async function setupCI() {
   // Step 1: Copy the YAML
   copyWorkflow();
 
-  // Step 2: Validate package.json scripts
+  // Step 2: Ensure package-lock.json exists
+  log.title('Checking for package-lock.json...');
+  ensurePackageLock();
+
+  // Step 3: Validate package.json scripts
   log.title('Validating package.json scripts...');
   const pkgValid = validatePackageJson();
   if (pkgValid) {
     log.success('package.json has required "start" and "test" scripts.');
   }
 
-  // Step 3: Check for Postman collection
+
+  // Step 4: Check for Postman collection
   log.title('Checking for Postman collection...');
   validatePostmanCollection();
 
-  // Step 4: Summary
+  // Step 5: Summary
   console.log('');
   log.success('CI setup complete!');
   log.info('The workflow will run on every git push across all branches.');
