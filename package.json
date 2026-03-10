@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node index.js",
-    "test": "echo 'smoke tests passed' && exit 0"
+    "test": "echo 'smoke tests passed' && exit 0",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "sonarqube-scanner": "^4.3.4"
   }
 }
